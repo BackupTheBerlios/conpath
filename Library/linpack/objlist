@@ -1,0 +1,4 @@
+SRCS =	dpofa.f dtrsl.f
+
+OBJS =	dpofa.o dtrsl.o
+

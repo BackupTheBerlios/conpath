@@ -123,6 +123,10 @@ MODULE FORCE                                                            !
          WRITE(6,'(2A)')' MCSCF DIDN''T CONVERGE... CONTINUING WITH', & !
                        ' OLD GRADIENTS!!!'                              !
          WRITE(6,'(A,I5/)')' FAILURE NUMBER : ',IFAIL                   !
+         WRITE(6,'(A)')' DELETING OLD RESTART FILE...'
+         COMMAND='rm -f  '//WFUDIR(1:K)//'/'//ABINIT_INP(1:J-3)//'res ' !
+         write (6,*)Command
+         CALL PSYST                                                     !
          IF (IFAIL.GT.5) THEN                                           !
             WRITE(6,'(A)')' ERROR IN MCSCF CALCULATION!!!'              !
             WRITE(6,'(A)')' PROBABILY YOUR ACTIVE SPACE IS ILL-DEFINED!'!

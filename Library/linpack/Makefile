@@ -14,28 +14,28 @@
 #     GNU General Public License for more details.                    
 #                                                                     
 #     For information please contact author at: t.laino@sns.it        
-#     Makefile to compile Library needed by Conpath Program
+#     Makefile to compile BLAS routines
 
-include ../Make.inc
+include ../../Make.inc
+include objlist
 
-library: 
-	@cd lapack; $(MAKE) lapack
-	@cd blas; $(MAKE) blas  
-	@cd linpack; $(MAKE) linpack  
-	rm -f $(LAPACK30)
-	@set OBJ=`find . -name "*.o" -exec echo {} \;`
-	ar -cru $(LAPACK30) ./*/*o ./*/*/*o
-	ranlib $(LAPACK30)
-
+linpack: $(OBJS)
+	
 clean:
-	@cd lapack; $(MAKE) clean
-	@cd blas; $(MAKE) clean
-	@cd linpack; $(MAKE) clean
-	rm -f $(LAPACK30)
+	rm -f $(OBJS) 
 
-config:
-	@cd lapack; $(MAKE) config
-	@cd blas; $(MAKE) config
-	@cd linpack; $(MAKE) config
+config: 
+	$(CONPATH_BIN)/Config
+
+.SUFFIXES: $(SUFFIXES) .f
+
+.f.o:
+	$(F90) $(F90LAPACKFLAGS) -c $<
+#
+# All dependencies beetwen modules and files have been stored in 
+# dependencies file
+#
+
+include dependencies
 
 # End of ConPath Makefile ...
