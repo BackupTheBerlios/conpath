@@ -164,6 +164,7 @@ $ECHO '   Current directory is '$curr'\n'
 
 INSTALL_DIR=$curr
 $ECHO 'INSTALL_DIR = '$INSTALL_DIR'/bin'
+$ECHO 'LIB_DIR     = '$INSTALL_DIR'/lib'
 $ECHO 'The above directory will be used as installation directory for binaries and scripts.'
 
 #

@@ -5,11 +5,11 @@
 # ================  USERS' SPECIFIC VARIABLES ================= #
 #################################################################
 # Conpath executable directory ...
-setenv Conpath_DIR /home/dpassero/Teo/CVS/Conpath/Conpath_r1.1/bin
+setenv Conpath_DIR /home/tlaino/ConPath/bin
 # Molpro Wavefunction scratch directory
-setenv wfudir /tmp/dpassero/wfu.$$/
+setenv wfudir /tmp/tlaino/wfu.$$/
 # TMPdirectory for Molpro scratch files
-setenv TMPDIR /tmp/dpassero/$$/
+setenv TMPDIR /tmp/tlaino/$$/
 #################################################################
 
 # Set some enviromental variables...
