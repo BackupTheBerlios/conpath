@@ -163,7 +163,7 @@ MODULE DYNPREPARE                                                       !
       IMPLICIT NONE                                                     !
       INTEGER :: ICHANNEL, INDT, IAT, IFIE, I, K                        !
       LOGICAL :: CONFERMA                                               !
-      CHARACTER (LEN=512) :: LINE                                       !
+      CHARACTER (LEN=1024):: LINE                                       !
       CHARACTER (LEN=256) :: FIELD,FIELD2                               !
                                                                         !
       ICHANNEL=12                                                       !

@@ -415,7 +415,7 @@ MODULE PARSING                                                          !
       IMPLICIT NONE                                                     !
       INTEGER, INTENT(IN)               :: ICHANNEL                     !
       CHARACTER (LEN=1), INTENT(IN)     :: TAR1, TAR2                   !
-      CHARACTER (LEN=512), INTENT(OUT)  :: LINE                         !
+      CHARACTER (LEN=1024), INTENT(OUT) :: LINE                         !
       CHARACTER (LEN=256)               :: CLINE                        !
       CHARACTER (LEN=20)                :: SLINE                        !
       LOGICAL :: CONFERMA, CONF2, FOUND                                 !
@@ -485,14 +485,14 @@ cycle1:  DO WHILE (.NOT.FOUND)                                          !
       USE        EMPTYLINE,   ONLY: EMPTY                               !
       IMPLICIT NONE                                                     !
       CHARACTER (LEN=*), INTENT(IN)    :: LINE                          !
-      CHARACTER (LEN=512)              :: CLINE                         !
+      CHARACTER (LEN=1024)             :: CLINE                         !
       CHARACTER (LEN=*), INTENT(OUT)   :: FIELD                         !
       INTEGER :: LFIELD, ICHANNEL, ITAR1, ITAR2, ILONG, I               !
       CHARACTER (LEN=1), INTENT(IN)   :: TAR1,TAR2                      !
       INTEGER, INTENT(IN) :: POS                                        !
                                                                         !
       CLINE=LINE                                                        !
-      CALL EATW(CLINE,256)                                              !
+      CALL EATW(CLINE,1024)                                             !
       ITAR1=0                                                           !
       ITAR2=0                                                           !
       DO I=1,POS                                                        !
