@@ -1,0 +1,481 @@
+! Routine To debug MODULE DERI_2_GEO_OBJECTS
+SUBROUTINE CHECK_FIRST_DERIVATIVES(LABEL,I1,I2,I3,I4,COORD,DER1,FAC)
+  USE START_JOB, ONLY:                NUMAT
+  USE DERIVATE_GEO_OBJECTS, ONLY:     DERI_BOND,       &
+                                      DERI_ANGLE,      &
+                                      DERI_TORSION
+  IMPLICIT NONE
+  ! Arguments
+  DOUBLE PRECISION, INTENT(IN), DIMENSION(3*NUMAT) :: COORD
+  DOUBLE PRECISION, INTENT(IN), DIMENSION(*)       :: DER1
+  DOUBLE PRECISION, INTENT(IN) :: FAC
+  INTEGER, INTENT(IN) :: I1, I2
+  INTEGER, INTENT(IN), OPTIONAL :: I3, I4
+  CHARACTER (LEN=*), INTENT(IN) :: LABEL
+  ! Variables
+  DOUBLE PRECISION, ALLOCATABLE :: CLOC(:), FLOC(:)
+  DOUBLE PRECISION :: REST
+  INTEGER          :: K, INUM
+
+  INUM = 0
+  DO WHILE (INUM.LT.2)
+     WRITE(6,90)
+     SELECT CASE (LABEL)
+     CASE("BOND")
+        ! Case 1
+        ALLOCATE( CLOC(3*NUMAT), FLOC(3*NUMAT) )
+        CLOC = COORD
+        FLOC = 0.D0
+        ! BOND < I1 - I2 >
+        ! Check with analytical deri_geo_object module
+        IF (INUM.EQ.0) THEN
+           CALL DERI_BOND(I1,I2,CLOC,FLOC,1.D0)
+           WRITE(6,'(10X,A,2I5)')"CHECKING BOND 1st DERIVATIVES: ",I1,I2
+           INUM = 1
+        ELSE
+           CALL DERI_NUMERICAL(I1=I1, I2=I2, CLOC=CLOC, FLOC=FLOC)
+           WRITE(6,'(10X,A,2I5)')"CHECKING NUMERICAL 1st DERIVATIVES: ",I1,I2
+           INUM = 2
+        ENDIF
+        WRITE(6,90)
+        ! 
+        WRITE(6,100)(FLOC((I1-1)*3+K),K=1,3),(DER1(0+K)*FAC,K=1,3), &
+                    (FLOC((I1-1)*3+K) - DER1(0+K)*FAC, K=1,3)
+        ! check on first atom
+        REST = 0.D0
+        DO K = 1, 3
+           REST = ABS(FLOC((I1-1)*3+K) - DER1(0+K)*FAC) + REST
+        END DO
+        IF (REST.GT.1.D-6) THEN
+           WRITE(6,'(A,F15.9)')"ERROR!!!",REST
+           STOP
+        ENDIF
+        !
+        WRITE(6,100)(FLOC((I2-1)*3+K),K=1,3),(DER1(3+K)*FAC,K=1,3), &
+                    (FLOC((I2-1)*3+K) - DER1(3+K)*FAC, K=1,3)
+        ! check on second atom
+        REST = 0.D0
+        DO K = 1, 3
+           REST = ABS(FLOC((I2-1)*3+K) - DER1(3+K)*FAC) + REST
+        END DO
+        IF (REST.GT.1.D-6) THEN
+           WRITE(6,'(A,F15.9)')"ERROR!!!",REST
+           STOP
+        ENDIF
+        DEALLOCATE(CLOC, FLOC)
+     CASE("ANGLE")
+        ! Case 2
+        ALLOCATE( CLOC(3*NUMAT), FLOC(3*NUMAT) )
+        CLOC = COORD
+        FLOC = 0.D0
+        ! ANGLE < I2 - I1 - I3 >
+        ! Check with analytical deri_geo_object module
+        IF (INUM.EQ.0) THEN
+           CALL DERI_ANGLE(I1,I2,I3,CLOC,FLOC,1.D0)
+           WRITE(6,'(10X,A,3I5)')"CHECKING ANGLE 1st DERIVATIVES: ",I1,I2,I3
+           INUM = 1
+        ELSE
+           CALL DERI_NUMERICAL(I1=I1, I2=I2, I3=I3, CLOC=CLOC, FLOC=FLOC)
+           WRITE(6,'(10X,A,3I5)')"CHECKING NUMERICAL 1st DERIVATIVES: ",I1,I2,I3
+           INUM = 2
+        ENDIF
+        WRITE(6,90)
+        ! 
+        WRITE(6,100)(FLOC((I1-1)*3+K),K=1,3),(DER1(0+K)*FAC,K=1,3), &
+                    (FLOC((I1-1)*3+K) - DER1(0+K)*FAC, K=1,3)
+        ! check on first atom
+        REST = 0.D0
+        DO K = 1, 3
+           REST = ABS(FLOC((I1-1)*3+K) - DER1(0+K)*FAC) + REST
+        END DO
+        IF (REST.GT.1.D-6) THEN
+           WRITE(6,'(A,F15.9)')"ERROR!!!",REST
+           STOP
+        ENDIF
+        !
+        WRITE(6,100)(FLOC((I2-1)*3+K),K=1,3),(DER1(3+K)*FAC,K=1,3), &
+             (FLOC((I2-1)*3+K) - DER1(3+K)*FAC, K=1,3)
+        ! check on second atom
+        REST = 0.D0
+        DO K = 1, 3
+           REST = ABS(FLOC((I2-1)*3+K) - DER1(3+K)*FAC) + REST
+        END DO
+        IF (REST.GT.1.D-6) THEN
+           WRITE(6,'(A,F15.9)')"ERROR!!!",REST 
+           STOP
+        ENDIF
+        !
+        WRITE(6,100)(FLOC((I3-1)*3+K),K=1,3),(DER1(6+K)*FAC,K=1,3), &
+                    (FLOC((I3-1)*3+K) - DER1(6+K)*FAC, K=1,3)
+        ! check on third atom
+        REST = 0.D0
+        DO K = 1, 3
+           REST = ABS(FLOC((I3-1)*3+K) - DER1(6+K)*FAC) + REST
+        END DO
+        IF (REST.GT.1.D-6) THEN
+           WRITE(6,'(A,F15.9)')"ERROR!!!",REST
+           STOP
+        ENDIF
+        DEALLOCATE(CLOC, FLOC)
+     CASE("TORSION")
+        ! Case 3
+        ALLOCATE( CLOC(3*NUMAT), FLOC(3*NUMAT) )
+        CLOC = COORD
+        FLOC = 0.D0
+        ! TORSION < I2 - I1 - I3 - I4 >
+        ! Check with analytical deri_geo_object module
+        IF (INUM.EQ.0) THEN
+           CALL DERI_TORSION(I1,I2,I3,I4,CLOC,FLOC,1.D0)
+           WRITE(6,'(10X,A,4I5)')"CHECKING TORSION 1st DERIVATIVES: ",I1,I2,I3,I4
+           INUM = 1
+        ELSE
+           CALL DERI_NUMERICAL(I1=I1, I2=I2, I3=I3, I4=I4, CLOC=CLOC, FLOC=FLOC)
+           WRITE(6,'(10X,A,4I5)')"CHECKING NUMERICAL 1st DERIVATIVES: ",I1,I2,I3,I4
+           INUM = 2
+        ENDIF
+        WRITE(6,90)
+        ! 
+        WRITE(6,100)(FLOC((I1-1)*3+K),K=1,3),(DER1(0+K)*FAC,K=1,3), &
+                    (FLOC((I1-1)*3+K) - DER1(0+K)*FAC, K=1,3)
+        ! check on first atom
+        REST = 0.D0
+        DO K = 1, 3
+           REST = ABS(FLOC((I1-1)*3+K) - DER1(0+K)*FAC) + REST
+        END DO
+        IF (REST.GT.1.D-6) THEN
+           WRITE(6,'(A,F15.9)')"ERROR!!!",REST
+           STOP
+        ENDIF
+        !
+        WRITE(6,100)(FLOC((I2-1)*3+K),K=1,3),(DER1(3+K)*FAC,K=1,3), &
+                    (FLOC((I2-1)*3+K) - DER1(3+K)*FAC, K=1,3)
+        ! check on second atom
+        REST = 0.D0
+        DO K = 1, 3
+           REST = ABS(FLOC((I2-1)*3+K) - DER1(3+K)*FAC) + REST
+        END DO
+        IF (REST.GT.1.D-6) THEN
+           WRITE(6,'(A,F15.9)')"ERROR!!!",REST
+           STOP
+        ENDIF
+        !
+        WRITE(6,100)(FLOC((I3-1)*3+K),K=1,3),(DER1(6+K)*FAC,K=1,3), &
+                    (FLOC((I3-1)*3+K) - DER1(6+K)*FAC, K=1,3)
+        ! check on third atom
+        REST = 0.D0
+        DO K = 1, 3
+           REST = ABS(FLOC((I3-1)*3+K) - DER1(6+K)*FAC) +REST
+        END DO
+        IF (REST.GT.1.D-6) THEN
+           WRITE(6,'(A,F15.9)')"ERROR!!!",REST
+           STOP
+        ENDIF
+        !
+        WRITE(6,100)(FLOC((I4-1)*3+K),K=1,3),(DER1(9+K)*FAC,K=1,3), &
+                    (FLOC((I4-1)*3+K) - DER1(9+K)*FAC, K=1,3)
+        ! check on fourth atom
+        REST = 0.D0
+        DO K = 1, 3
+           REST = ABS(FLOC((I4-1)*3+K) - DER1(9+K)*FAC) + REST
+        END DO
+        IF (REST.GT.1.D-6) THEN
+           WRITE(6,'(A,F15.9)')"ERROR!!!",REST
+           STOP
+        ENDIF
+        DEALLOCATE( CLOC, FLOC )
+     END SELECT
+     WRITE(6,90)
+     WRITE(6,'(//)')
+  END DO
+
+  RETURN
+   90 FORMAT(132("-"))
+  100 FORMAT(3F14.9," | ",3F14.9," | ",3F14.9)
+END SUBROUTINE CHECK_FIRST_DERIVATIVES
+  
+
+SUBROUTINE DERI_NUMERICAL(I1, I2, I3, I4, CLOC, FLOC)
+  USE START_JOB, ONLY:       NUMAT
+  USE GEO_OBJECTS, ONLY:     BOND_VAL,       &
+                             ANGLE_VAL,      &
+                             TORS_VAL
+  IMPLICIT NONE
+  ! Arguments
+  INTEGER, INTENT(IN)           ::  I1, I2
+  INTEGER, INTENT(IN), OPTIONAL ::  I3, I4
+  DOUBLE PRECISION, INTENT(IN), DIMENSION(3*NUMAT)    :: CLOC
+  DOUBLE PRECISION, INTENT(INOUT), DIMENSION(3*NUMAT) :: FLOC
+  ! Local Variables
+  DOUBLE PRECISION, ALLOCATABLE :: CMIN(:), CMAX(:)
+  DOUBLE PRECISION :: DX, CONV
+  INTEGER :: I, J, L, K
+
+  DX   = 0.001D0
+  CONV = 180.D0/(4.D0*ATAN(1.D0))
+  FLOC = 0.D0
+  ALLOCATE (  CMIN(3*NUMAT), CMAX(3*NUMAT) )
+  IF (.NOT.PRESENT(I3)) THEN
+     ! BOND
+     WRITE(6,'(10X,A,F15.9," ANGSTROM")')'BOND VALUE =',BOND_VAL(I1,I2,CLOC)
+  ELSEIF (.NOT.PRESENT(I4)) THEN
+     ! ANGLE
+     WRITE(6,'(10X,A,F15.9," DEGREE")')'ANGLE VALUE =',ANGLE_VAL(I1,I2,I3,CLOC)*CONV
+  ELSE
+     ! TORSION   
+     WRITE(6,'(10X,A,F15.9," DEGREE")')'TORSION VALUE =',TORS_VAL(I1,I2,I3,I4,CLOC)*CONV
+  ENDIF
+  DO I = 1, 3*NUMAT
+     CMIN = CLOC
+     CMAX = CLOC
+     CMIN(I) = CMIN(I) - DX/2.D0
+     CMAX(I) = CMAX(I) + DX/2.D0
+     IF (.NOT.PRESENT(I3)) THEN
+        ! BOND
+        FLOC (I) = (BOND_VAL(I1,I2,CMAX) - BOND_VAL(I1,I2,CMIN)) / DX
+     ELSEIF (.NOT.PRESENT(I4)) THEN
+        ! ANGLE
+        FLOC (I) = (ANGLE_VAL(I1,I2,I3,CMAX) - ANGLE_VAL(I1,I2,I3,CMIN)) / DX
+     ELSE
+        ! TORSION
+        FLOC (I) = (TORS_VAL(I1,I2,I3,I4,CMAX) - TORS_VAL(I1,I2,I3,I4,CMIN)) / DX
+     ENDIF
+  END DO
+  
+  RETURN
+END SUBROUTINE DERI_NUMERICAL
+
+
+SUBROUTINE CHECK_SECOND_DERIVATIVES(LABEL,I1,I2,I3,I4,COORD,DER2,FAC)
+  USE START_JOB, ONLY:                NUMAT
+  USE DERIVATE_GEO_OBJECTS, ONLY:     DERI_BOND,       &
+                                      DERI_ANGLE,      &
+                                      DERI_TORSION
+  IMPLICIT NONE
+  ! Arguments
+  DOUBLE PRECISION, INTENT(IN), DIMENSION(3*NUMAT) :: COORD
+  DOUBLE PRECISION, INTENT(IN), DIMENSION(*)       :: DER2
+  DOUBLE PRECISION, INTENT(IN) :: FAC
+  INTEGER, INTENT(IN) :: I1, I2
+  INTEGER, INTENT(IN), OPTIONAL :: I3, I4
+  CHARACTER (LEN=*), INTENT(IN) :: LABEL
+  ! Local Variables
+  DOUBLE PRECISION, ALLOCATABLE :: CLOC(:), D2LOC(:,:), D2(:,:)
+  INTEGER :: I, J, K, L, ATK, ATI, INDF, KK, II
+  DOUBLE PRECISION :: REST
+! DER2 IS A DIAGONAL MATRIX ...  21, 45, 78
+! WE REBUILD IN D2 THE ORIGINAL SECOND DERIVATIVES MATRIX..
+  ALLOCATE ( D2(3*NUMAT,3*NUMAT) )
+! REBUILDIND SECOND DERIVATIVE MATRIX
+  SELECT CASE (LABEL)
+  CASE("BOND")
+     D2 = 0.D0
+     INDF = 0
+     DO K = 1, 6
+        DO I = 1, K
+           INDF = INDF + 1
+           KK   = MOD (K, 3)
+           II   = MOD (I, 3)
+           IF (KK.EQ.0) KK = 3
+           IF (II.EQ.0) II = 3
+           ATK = I1
+           ATI = I1
+           IF ( K .GT. 3 ) ATK = I2
+           IF ( I .GT. 3 ) ATI = I2
+           D2((ATK - 1)*3+KK, (ATI - 1)*3+II )   = DER2( INDF )
+           D2((ATI - 1)*3+II, (ATK - 1)*3+KK )   = DER2( INDF ) 
+        END DO
+     END DO
+  CASE("ANGLE")
+     D2 = 0.D0
+     INDF = 0
+     DO K = 1, 9
+        DO I = 1, K
+           INDF = INDF + 1
+           KK   = MOD (K, 3)
+           II   = MOD (I, 3)
+           IF (KK.EQ.0) KK = 3
+           IF (II.EQ.0) II = 3
+           ATK = I1
+           ATI = I1
+           IF ( K .GT. 3 ) ATK = I2
+           IF ( I .GT. 3 ) ATI = I2
+           IF ( K .GT. 6 ) ATK = I3
+           IF ( I .GT. 6 ) ATI = I3
+           D2((ATK - 1)*3+KK, (ATI - 1)*3+II )   = DER2( INDF )
+           D2((ATI - 1)*3+II, (ATK - 1)*3+KK )   = DER2( INDF ) 
+        END DO
+     END DO
+  CASE("TORSION")
+     D2 = 0.D0
+     INDF = 0
+     DO K = 1, 12
+        DO I = 1, K
+           INDF = INDF + 1
+           KK   = MOD (K, 3)
+           II   = MOD (I, 3)
+           IF (KK.EQ.0) KK = 3
+           IF (II.EQ.0) II = 3
+           ATK = I1
+           ATI = I1
+           IF ( K .GT. 3 ) ATK = I2
+           IF ( I .GT. 3 ) ATI = I2
+           IF ( K .GT. 6 ) ATK = I3
+           IF ( I .GT. 6 ) ATI = I3
+           IF ( K .GT. 9 ) ATK = I4
+           IF ( I .GT. 9 ) ATI = I4
+           D2((ATK - 1)*3+KK, (ATI - 1)*3+II )   = DER2( INDF )
+           D2((ATI - 1)*3+II, (ATK - 1)*3+KK )   = DER2( INDF ) 
+        END DO
+     END DO     
+  END SELECT
+! START WITH THE CHECK
+  WRITE(6,90)
+  SELECT CASE (LABEL)
+  CASE("BOND")
+     ! Case 1
+     ALLOCATE( CLOC(3*NUMAT), D2LOC(3*NUMAT,3*NUMAT) )
+     CLOC = COORD
+     D2LOC= 0.D0
+     ! BOND < I1 - I2 >
+     ! Check with numerical second derivatives
+     CALL DERI_2_NUMERICAL(I1=I1, I2=I2, CLOC=CLOC, D2LOC=D2LOC)
+     WRITE(6,'(10X,A,4I5)')"CHECKING NUMERICAL 2nd DERIVATIVES OF BOND: ",I1,I2
+     WRITE(6,90)
+     ! 
+     DO I = 1, 3*NUMAT
+        ! check on ATOMS...
+        write(6,'(/)')
+        DO J = 1 ,NUMAT
+           WRITE(6,100)(D2LOC(I,(J-1)*3+K),K=1,3),(D2(I,(J-1)*3+K),K=1,3), &
+                       (D2LOC(I,(J-1)*3+K)       - D2(I,(J-1)*3+K),K=1,3)
+           REST = 0.D0
+           DO K = 1, 3
+              REST = ABS(D2LOC(I,(J-1)*3+K) - D2(I,(J-1)*3+K)) + REST
+           END DO
+           IF (REST.GT.1.D-6) THEN
+              WRITE(6,'(A,F15.9)')"ERROR!!!",REST
+              STOP
+           ENDIF
+        END DO
+     END DO
+     DEALLOCATE(CLOC, D2LOC)
+  CASE("ANGLE")
+     ! Case 1
+     ALLOCATE( CLOC(3*NUMAT), D2LOC(3*NUMAT,3*NUMAT) )
+     CLOC = COORD
+     D2LOC= 0.D0
+     ! ANGLE < I1 - I2 - I3 >
+     ! Check with numerical second derivatives
+     CALL DERI_2_NUMERICAL(I1=I1, I2=I2, I3=I3, CLOC=CLOC, D2LOC=D2LOC)
+     WRITE(6,'(10X,A,4I5)')"CHECKING NUMERICAL 2nd DERIVATIVES OF ANGLE: ",I1,I2,I3
+     WRITE(6,90)
+     ! 
+     DO I = 1, 3*NUMAT
+        ! check on ATOMS...
+        write(6,'(/)')
+        DO J = 1 ,NUMAT
+           WRITE(6,100)(D2LOC(I,(J-1)*3+K),K=1,3),(D2(I,(J-1)*3+K),K=1,3), &
+                       (D2LOC(I,(J-1)*3+K)       - D2(I,(J-1)*3+K),K=1,3)
+           REST = 0.D0
+           DO K = 1, 3
+              REST = ABS(D2LOC(I,(J-1)*3+K) - D2(I,(J-1)*3+K)) + REST
+           END DO
+           IF (REST.GT.1.D-6) THEN
+              WRITE(6,'(A,F15.9)')"ERROR!!!",REST
+              STOP
+           ENDIF
+        END DO
+     END DO
+     DEALLOCATE(CLOC, D2LOC)     
+  CASE("TORSION")
+     ! Case 1
+     ALLOCATE( CLOC(3*NUMAT), D2LOC(3*NUMAT,3*NUMAT) )
+     CLOC = COORD
+     D2LOC= 0.D0
+     ! TORSION < I1 - I2 - I3 - I4 >
+     ! Check with numerical second derivatives
+     CALL DERI_2_NUMERICAL(I1=I1, I2=I2, I3=I3, I4=I4, CLOC=CLOC, D2LOC=D2LOC)
+     WRITE(6,'(10X,A,4I5)')"CHECKING NUMERICAL 2nd DERIVATIVES OF TORSION: ",I1,I2,I3,I4
+     WRITE(6,90)
+     ! 
+     DO I = 1, 3*NUMAT
+        ! check on ATOMS...
+        write(6,'(/)')
+        DO J = 1 ,NUMAT
+           WRITE(6,100)(D2LOC(I,(J-1)*3+K),K=1,3),(D2(I,(J-1)*3+K),K=1,3), &
+                       (D2LOC(I,(J-1)*3+K)       - D2(I,(J-1)*3+K),K=1,3)
+           REST = 0.D0
+           DO K = 1, 3
+              REST = ABS(D2LOC(I,(J-1)*3+K) - D2(I,(J-1)*3+K)) + REST
+           END DO
+           IF (REST.GT.1.D-6) THEN
+              WRITE(6,'(A,F15.9)')"ERROR!!!",REST
+              STOP
+           ENDIF
+        END DO
+     END DO
+     DEALLOCATE(CLOC, D2LOC)     
+  END SELECT
+  DEALLOCATE (D2)
+  WRITE(6,90)
+  WRITE(6,'(//)')
+  
+  RETURN
+   90 FORMAT(132("-"))
+  100 FORMAT(3F14.9," | ",3F14.9," | ",3F14.9)
+END SUBROUTINE CHECK_SECOND_DERIVATIVES
+
+
+SUBROUTINE DERI_2_NUMERICAL(I1, I2, I3, I4, CLOC, D2LOC)
+  USE START_JOB, ONLY:                NUMAT
+  USE DERIVATE_GEO_OBJECTS, ONLY:     DERI_BOND,       &
+                                      DERI_ANGLE,      &
+                                      DERI_TORSION
+  IMPLICIT NONE
+  ! Arguments
+  INTEGER, INTENT(IN)              :: I1, I2
+  INTEGER, INTENT(IN), OPTIONAL    :: I3, I4
+  DOUBLE PRECISION, INTENT(IN),    DIMENSION(3*NUMAT)         :: CLOC
+  DOUBLE PRECISION, INTENT(INOUT), DIMENSION(3*NUMAT,3*NUMAT) :: D2LOC
+  ! Local Variables
+  DOUBLE PRECISION, ALLOCATABLE :: CMIN(:), CMAX(:), FMIN(:), FMAX(:)
+  DOUBLE PRECISION :: DX
+  INTEGER          :: I, J, L, K
+
+  DX   = 0.0001D0
+  D2LOC = 0.D0
+  ALLOCATE (  CMIN(3*NUMAT), CMAX(3*NUMAT), FMIN(3*NUMAT), FMAX(3*NUMAT) )
+  DO I = 1, 3 * NUMAT
+     CMIN = CLOC
+     CMAX = CLOC
+     FMIN = 0.D0
+     FMAX = 0.D0
+     CMIN(I) = CMIN(I) - DX/2.D0
+     CMAX(I) = CMAX(I) + DX/2.D0
+     IF (.NOT.PRESENT(I3)) THEN
+        ! BOND
+        CALL DERI_BOND(I1, I2, CMAX, FMAX, 1.D0)
+        CALL DERI_BOND(I1, I2, CMIN, FMIN, 1.D0)     
+        DO J = 1, 3*NUMAT
+           D2LOC (I, J) = (FMAX(J) - FMIN(J)) / DX
+        END DO
+     ELSEIF (.NOT.PRESENT(I4)) THEN
+        ! ANGLE
+         CALL DERI_ANGLE(I1, I2, I3, CMAX, FMAX, 1.D0)
+         CALL DERI_ANGLE(I1, I2, I3, CMIN, FMIN, 1.D0)           
+         DO J = 1, 3*NUMAT
+            D2LOC (I, J) = (FMAX(J) - FMIN(J)) / DX
+         END DO
+     ELSE
+        ! TORSION
+         CALL DERI_TORSION(I1, I2, I3, I4, CMAX, FMAX, 1.D0)
+         CALL DERI_TORSION(I1, I2, I3, I4, CMIN, FMIN, 1.D0)           
+         DO J = 1, 3*NUMAT
+            D2LOC (I, J) = (FMAX(J) - FMIN(J)) / DX
+         END DO
+     ENDIF
+  END DO
+
+  DEALLOCATE( CMIN, CMAX, FMIN, FMAX)
+  RETURN
+END SUBROUTINE DERI_2_NUMERICAL

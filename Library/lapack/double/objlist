@@ -1,0 +1,6 @@
+SRCS =	dgesv.f dgetf2.f dgetrf.f dgetri.f dgetrs.f dlaswp.f dtrti2.f \
+	dtrtri.f
+
+OBJS =	dgesv.o dgetf2.o dgetrf.o dgetri.o dgetrs.o dlaswp.o dtrti2.o \
+	dtrtri.o
+

@@ -1,0 +1,6 @@
+SRCS =	dgemm.f dgemv.f dger.f dscal.f dswap.f dtrmm.f dtrmv.f dtrsm.f \
+	idamax.f lsame.f xerbla.f
+
+OBJS =	dgemm.o dgemv.o dger.o dscal.o dswap.o dtrmm.o dtrmv.o dtrsm.o \
+	idamax.o lsame.o xerbla.o
+

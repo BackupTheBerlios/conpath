@@ -1,0 +1,120 @@
+MODULE VERLET_ZMAT_INT
+  USE START_JOB,  ONLY: NUMAT
+  USE DYNPREPARE, ONLY: VX,                  &
+                        FX,                  &
+                        GEO
+  USE DYNPREPARE, ONLY: F,                   &
+                        V,                   &
+                        M
+  IMPLICIT NONE
+
+CONTAINS
+  
+  SUBROUTINE MOVE_ZMAT_A (  DT,  MASS, QINTN, QINTV, BMAT, CMAT, NUM_VAR)    
+    IMPLICIT NONE
+    ! Arguments
+    INTEGER, INTENT(IN) :: NUM_VAR
+    DOUBLE PRECISION, INTENT(IN)  :: DT
+    DOUBLE PRECISION, INTENT(IN), DIMENSION(3*NUMAT,3*NUMAT) :: MASS
+    DOUBLE PRECISION, INTENT(INOUT), DIMENSION(NUM_VAR) :: QINTN, QINTV
+    DOUBLE PRECISION, INTENT(IN), DIMENSION(NUM_VAR,3*NUMAT) :: BMAT
+    DOUBLE PRECISION, INTENT(IN), DIMENSION(NUM_VAR,3*NUMAT,3*NUMAT) :: CMAT
+    ! Local Variables
+    DOUBLE PRECISION :: DT2, DTSQ2
+    DOUBLE PRECISION, ALLOCATABLE :: QINTDD(:), CMAT2(:,:)
+    INTEGER :: I, J, K, II, L
+
+    DT2   = DT / 2.0
+    DTSQ2 = DT * DT2
+
+    IF (.NOT.ALLOCATED(QINTDD)) ALLOCATE(QINTDD(NUM_VAR))
+    IF (.NOT.ALLOCATED(CMAT2)) ALLOCATE(CMAT2(NUM_VAR,3*NUMAT))
+
+    DO I=1, NUM_VAR
+       DO J = 1, 3*NUMAT
+          DO K = 1, 3*NUMAT
+             CMAT2(I,J) = CMAT2(I,J) + CMAT(I,J,K) * VX(K)
+          END DO
+       END DO
+    END DO
+    
+    
+    QINTDD  = MATMUL( BMAT,  MATMUL( MASS, FX)) -   &
+              MATMUL( CMAT2, VX )
+
+    QINTN = QINTN + DT  * QINTV - DTSQ2 * QINTDD
+    QINTV = QINTV - DT2 * QINTDD 
+    VX    = VX    - DT2 * MATMUL(MASS, FX)
+
+    DO  I = 1, NUMAT
+       II = (I-1)*3
+       V(I)%X =   VX(II+1)
+       V(I)%Y =   VX(II+2)
+       V(I)%Z =   VX(II+3)
+    END DO
+      
+    DEALLOCATE (QINTDD)
+
+    ! Update GEO
+    I = 0
+    DO L = 2, NUMAT
+       I = I + 1
+       GEO(1,L) = QINTN(I) 
+       IF (L.EQ.2) CYCLE
+       I = I + 1
+       GEO(2,L) = QINTN(I)
+       IF (L.EQ.3) CYCLE
+       I = I + 1
+       GEO(3,L) = QINTN(I)
+    END DO
+
+    RETURN
+  END SUBROUTINE MOVE_ZMAT_A
+
+  SUBROUTINE  MOVE_ZMAT_B (  DT,  MASS, QINTN, QINTV, BMAT, CMAT, NUM_VAR)    
+    IMPLICIT NONE
+    ! Arguments
+    INTEGER, INTENT(IN) :: NUM_VAR
+    DOUBLE PRECISION, INTENT(IN)  :: DT
+    DOUBLE PRECISION, INTENT(IN), DIMENSION(3*NUMAT,3*NUMAT) :: MASS
+    DOUBLE PRECISION, INTENT(INOUT), DIMENSION(NUM_VAR) :: QINTN, QINTV
+    DOUBLE PRECISION, INTENT(IN), DIMENSION(NUM_VAR,3*NUMAT) :: BMAT
+    DOUBLE PRECISION, INTENT(IN), DIMENSION(NUM_VAR,3*NUMAT,3*NUMAT) :: CMAT
+    ! Local Variables
+    DOUBLE PRECISION :: DT2, DTSQ2
+    DOUBLE PRECISION, ALLOCATABLE :: QINTDD(:), CMAT2(:,:)
+    INTEGER :: I, J, K, II
+
+    DT2   = DT / 2.0
+    DTSQ2 = DT * DT2
+
+    IF (.NOT.ALLOCATED(QINTDD)) ALLOCATE(QINTDD(NUM_VAR))
+    IF (.NOT.ALLOCATED(CMAT2)) ALLOCATE(CMAT2(NUM_VAR,3*NUMAT))
+
+    DO I=1, NUM_VAR
+       DO J = 1, 3*NUMAT
+          DO K = 1, 3*NUMAT
+             CMAT2(I,J) = CMAT2(I,J) + CMAT(I,J,K) * VX(K)
+          END DO
+       END DO
+    END DO
+
+    QINTDD  = MATMUL( BMAT,  MATMUL( MASS, FX)) -   &
+              MATMUL( CMAT2, VX )
+
+    QINTV = QINTV - DT2 * QINTDD 
+    VX    = VX    - DT2 * MATMUL(MASS, FX)
+
+    DO  I = 1, NUMAT
+       II = (I-1)*3
+       V(I)%X =   VX(II+1)
+       V(I)%Y =   VX(II+2)
+       V(I)%Z =   VX(II+3)
+    END DO
+      
+    DEALLOCATE (QINTDD)
+
+    RETURN
+  END SUBROUTINE MOVE_ZMAT_B
+
+END MODULE VERLET_ZMAT_INT

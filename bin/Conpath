@@ -1,0 +1,69 @@
+#!/bin/tcsh
+# Script to launch Conpath program ... 
+
+#################################################################
+# ================  USERS' SPECIFIC VARIABLES ================= #
+#################################################################
+# Conpath executable directory ...
+setenv Conpath_DIR /home/dpassero/Teo/CVS/Conpath/Conpath_r1.1/bin
+# Molpro Wavefunction scratch directory
+setenv wfudir /tmp/dpassero/wfu.$$/
+# TMPdirectory for Molpro scratch files
+setenv TMPDIR /tmp/dpassero/$$/
+#################################################################
+
+# Set some enviromental variables...
+# Get user name ... and date and time ...
+setenv myname  `whoami`
+setenv date    `date`
+setenv restart    NO
+setenv restartWFU NO
+mkdir ${wfudir}
+mkdir ${TMPDIR}
+
+foreach arg ( $argv[2-$#argv] )
+  switch ( $arg )
+    case restart:
+	setenv restart YES
+	breaksw
+    case useoldwfu:
+	# Pay attention to molpro wavefunction restart file
+	# Use the restart file when you start a new job only 
+        #     when explicitely required
+	setenv restartWFU YES 
+	breaksw
+    default:
+	echo $arg is not a legal option for Conpath program
+	echo "Conpath <nomefile> {             "
+	echo "                      restart    "
+	echo "                      useoldwfu  "
+	echo "                    }            "
+        exit 10
+  endsw
+end
+
+# Delete the WFU molpro when not explicitely used
+if ( ${restartWFU} == "NO" ) then
+  find $TMPDIR   -name "*.res" -exec rm -f {} \;
+  find ${wfudir} -name "*.res" -exec rm -f {} \;
+endif 
+
+# Start the job..
+if ( ${restart} == "YES" ) then
+     ${Conpath_DIR}/Conpath.exe $1  restart |tee -a $1:r.out
+     echo "Conpath exited with status:  $status"
+else
+   ${Conpath_DIR}/Conpath.exe $1 |tee $1:r.out
+   echo "Conpath exited with status:  $status"
+endif
+
+# Inform about  WFUrestart file in the WFUDIR
+echo "The content of  directory: ${wfudir} is ..." 
+foreach file ( `ls ${wfudir} ` ) 
+ ls -l ${wfudir}$file
+end
+echo "\n Info :"
+echo "Remember to save the MOLPRO restart file if you need it in the future!"
+echo "Conpath done!"
+
+exit 0

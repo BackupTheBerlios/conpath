@@ -1,0 +1,4 @@
+SRCS =	ieeeck.f ilaenv.f
+
+OBJS =	ieeeck.o ilaenv.o
+

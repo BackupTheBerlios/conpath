@@ -1,0 +1,273 @@
+#!/bin/sh
+#
+# Program ConPath - Generical program to perform dynamics 
+#                   in search of Conical Intersections (and not only!..)
+#
+#     Copyright (C) 2002  Teodoro Laino                                
+#                         Daniele Passerone
+#                                                                      
+#     This program is free software; you can redistribute it and/or    
+#     modify it under the terms of the GNU General Public License      
+#     as published by the Free Software Foundation; either version 2   
+#     of the License, or (at your option) any later version.          
+#     This program is distributed in the hope that it will be useful, 
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of  
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the   
+#     GNU General Public License for more details.                    
+#                                                                     
+#     For information please contact author at: t.laino@sns.it        
+#     Makefile to compile all ConPath
+#
+# It tries to determine what platform we are on (although allowing builds 
+# for other platforms, as needed for crosscompiling), as well as detect any
+# interesting mathematical libraries on the present computer.
+#
+#
+
+if [ "$2" = "" ]; then pref=Conpath; else pref="$2"; fi
+def="$pref.exe"
+
+MACHTYPE=`uname -s`
+if [ `uname` = 'Linux' ]; then
+    ECHO='echo -e'
+    prc=`uname -m`
+else
+    ECHO=echo
+fi
+
+$ECHO ''
+$ECHO '------------------------------------------------------------------'
+$ECHO '   Configuring the  ConPath  Makefile  and  ConPath run script'
+$ECHO '------------------------------------------------------------------'
+$ECHO ''
+
+arclist='linux-pgi linux-ifc  hp '
+
+#
+# Attempting auto-configuration. The list of replies from uname should be
+# extended!
+#
+
+PERL=`which perl`
+
+if [ -z "$1" ]; then
+    case $MACHTYPE in
+	Linux|FreeBSD ) if [ "`uname -m`" = alpha ]; then
+			    ARCH="-linux-alpha"
+			    $ECHO "* linux alpha not tested yet *\n"
+			    exit 
+			else 
+			    ARCH="-linux"
+			fi ;;
+		HP-UX ) ARCH="-hp";;
+		    * ) $ECHO "Error: No architecture specified.\nPlease enter architecture on command line as 'configure -architecture'\n\nThe following architectures are allowed:\n    $arclist"
+        exit;;
+    esac
+    $ECHO "No architecture specified, attempting auto-configuration:"
+    answer=
+    while [ "$answer" != "y" -a "$answer" != "n" ]
+    do
+      $ECHO "This appears to be a $ARCH architecture. Is this correct? [y/n] \c"
+      read answer
+    done
+    if [ "$answer" = "n" ]; then
+        $ECHO "\nPlease configure manually from command line: 'configure -architecture'\n\nThe following architectures are allowed:\n    $arclist"
+        exit
+    else
+	$ECHO ""
+    fi
+else
+    ARCH="$1"
+fi
+$ECHO "   Installing ConPath on a $ARCH computer\n"
+case $ARCH in
+    -hp ) WHICH="hp";;
+    -linux-pgi ) WHICH="linux-pgi";;
+    -linux-ifc ) WHICH="linux-ifc";;
+    -?|-help ) $ECHO " Run from command line: 'configure -architecture'\n\n The following architectures are allowed:\n    $arclist"
+        exit;;
+    * ) $ECHO "$1 is an unsupported architecture. Choose one of\n   $arclist\n\n NOTE: The syntax is 'configure -architecture'\n"
+        exit;;
+esac
+#
+# Now we try to check the compiler.
+#
+case $WHICH in
+    linux-ifc)    complist='ifc'
+                  ccmplist='gcc cc';;
+    linux-pgi)    complist='pgf90'
+                  ccmplist='pgcc gcc';;
+    hp)           complist='f90 '
+                  ccmplist='cc'
+esac
+#
+# Test for the existence of the compiler
+#
+$ECHO "\n   Perl binary on path: $PERL"
+$ECHO "\n   Checking for Fortran compiler ...\c"
+
+for comp in $complist; do
+    set dummy $comp; ac_word=$2
+    $ECHO " $comp\c"
+    IFS="${IFS=   }"; ac_save_ifs="$IFS"; IFS="${IFS}:"
+    for ac_dir in $PATH; do
+        test -z "$ac_dir" && ac_dir=.
+	if test -f $ac_dir/$ac_word; then
+	    ac_cv_prog_F77=$ac_word
+     	    break
+        fi  
+    done
+    IFS="$ac_save_ifs"
+    test -z "$ac_cv_prog_F77" && ac_cv_prog_F77=""
+    F77="$ac_cv_prog_F77"
+    if test -n "$F77"; then
+	$ECHO "\n   Compiler $F77 found"
+        break
+    fi
+done
+if test -z "$F77"; then
+    $ECHO "\n   No compiler found on this computer"
+    $ECHO "   Cannot proceed without a Fortran compiler in path"
+    exit
+fi
+$ECHO "   Checking for C compiler ...\c"
+for comp in $ccmplist; do
+    set dummy $comp; ac_word=$2
+    $ECHO " $comp\c"
+    IFS="${IFS=   }"; ac_save_ifs="$IFS"; IFS="${IFS}:"
+    for ac_dir in $PATH; do
+        test -z "$ac_dir" && ac_dir=.
+	if test -f $ac_dir/$ac_word; then
+	    ac_cv_prog_C=$ac_word
+     	    break
+	fi  
+    done
+    IFS="$ac_save_ifs"
+    test -z "$ac_cv_prog_C" && ac_cv_prog_C=""
+    CC="$ac_cv_prog_C"
+    if test -n "$CC"; then
+        $ECHO "\n   Compiler $CC found"
+        break
+    fi
+done
+if test -z "$CC"; then
+    $ECHO "\n   No C compiler found on this computer"
+    $ECHO "   Cannot proceed without a C compiler in path"
+    exit
+fi
+#
+# Determine location for executable and run script
+#
+
+curr=`pwd`
+$ECHO '   Current directory is '$curr'\n'
+
+INSTALL_DIR=$curr
+$ECHO 'INSTALL_DIR = '$INSTALL_DIR'/bin'
+$ECHO 'The above directory will be used as installation directory for binaries and scripts.'
+
+#
+# Determine default scratch disk space for calculations
+#
+
+if [ -d '/scratch' ]; then
+    worksp='/scratch/'$USER
+elif [ -d '/work' ]; then
+    worksp='/work/'$USER
+elif [ -d '/scr' ]; then
+    worksp='/scr/'$USER
+elif [ -d '/temp' ]; then
+    worksp='/temp/'$USER
+else
+    $ECHO '\nI did not find /work, /scratch, /scr or /temp. I will use /tmp'
+    worksp='/tmp/'$USER
+fi
+
+answer=
+while [ "$answer" != "y" -a "$answer" != "n" ]
+do
+    $ECHO '\n   Job specific directories under '$worksp'\n   will be used for temporary files when running ConPath\n'
+    $ECHO 'Use '$worksp' as default root scratch space in ConPath run script? [y/n] \c'
+    read answer
+done
+if [ "$answer" = "n" ];  then
+    $ECHO 'Please enter default root scratch directory: \c'
+    read worksp
+fi
+
+#
+# We are beginning to see the end of the installation requirements
+#
+# We will now dump machine specific things to Makefile.inc
+#
+tab=`$ECHO "\t"`
+$ECHO '   Updating all information on ConPath directory.'
+
+if [ -f Make.inc ]; then
+    $ECHO '   Ooops. Make.inc exists. I take a backup as Make.inc.orig'
+    if [ -f Make.inc.orig -a ! -w Make.inc.orig ]; then
+        $ECHO '   Make.inc.orig is write-protected.'
+        answer=
+        while [ "$answer" != "y" -a "$answer" != "n" ]
+        do
+           $ECHO 'Do you want me to overwrite Make.inc.orig anyway? [y/n]\c'
+           read answer
+        done
+        if [ "$answer" = "n" ];  then
+            $ECHO 'I do not take a backup of Make.inc. This file will be overwritten'
+        else
+            exec `chmod u+w Make.inc.orig`
+            exec `mv Make.inc Make.inc.orig`
+            exec `chmod u-w Make.inc.orig`
+        fi
+    else   
+        exec `mv Make.inc Make.inc.orig`
+        exec `chmod u-w Make.inc.orig`
+    fi
+fi
+
+cat <<EOF > Make.inc
+CONPATH_DIR = $curr
+
+EOF
+
+# End of Make.inc configuration - Platform dependent part
+
+case $WHICH in
+    linux-ifc)    cat Machine/Make.LINUX_IFC.inc >> Make.inc ;;
+    linux-pgi)    cat Machine/Make.LINUX_PGI.inc >> Make.inc ;;
+    hp)           cat Machine/Make.HPUX.inc      >> Make.inc ;;
+esac
+
+# We need to modify some variables in several scripts...
+
+binlist='bin/Config  bin/Conpath  sys/bin/makeobj  sys/bin/makedep  sys/bin/makemake'
+$ECHO "\n"
+
+for binary in $binlist; do
+    dummy=$binary ;
+    $ECHO " Updating $dummy script \c" 
+    case $dummy in
+	bin/Config)        sed -e '/setenv CONPATH_SYSDIR/c\' -e "setenv CONPATH_SYSDIR $curr"'/sys' bin/Config > bin/Config.new
+			   mv bin/Config.new bin/Config ;;
+	bin/Conpath)       sed -e '/setenv Conpath_DIR/c\' -e "setenv Conpath_DIR $curr/bin"    bin/Conpath   > bin/Conpath.1
+			   sed -e '/setenv wfudir/c\'      -e "setenv wfudir $worksp/wfu."'$$/' bin/Conpath.1 > bin/Conpath.2
+			   sed -e '/setenv TMPDIR/c\'      -e "setenv TMPDIR $worksp/"'$$/'     bin/Conpath.2 > bin/Conpath
+			   rm bin/Conpath.1 bin/Conpath.2 ;;
+	sys/bin/makeobj)   sed -e '/perl/c\' -e '\#!'"$PERL" sys/bin/makeobj > sys/bin/makeobj.new
+			   mv sys/bin/makeobj.new sys/bin/makeobj ;;
+	sys/bin/makemake)  sed -e '/perl/c\' -e '\#!'"$PERL" sys/bin/makemake > sys/bin/makemake.new
+			   mv sys/bin/makemake.new sys/bin/makemake ;;
+	sys/bin/makedep)   sed -e '/perl/c\' -e '\#!'"$PERL" sys/bin/makedep > sys/bin/makedep.new
+			   mv sys/bin/makedep.new sys/bin/makedep ;;
+    esac
+    chmod 755 $dummy
+    $ECHO " .... Done!"
+done
+#
+# Update the ConPath run-script
+#
+
+$ECHO
+$ECHO '\n End of variables configuration! Type \n > make install \n to compile and install ConPath! \n'
+$ECHO 'ConPath - Copyright 2002 - GPL release...'

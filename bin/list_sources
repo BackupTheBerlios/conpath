@@ -1,0 +1,6 @@
+#!/bin/tcsh -f
+echo SOURCE_FILES = \\ > source_list
+foreach file (` ls *.F90`)
+  echo 	"	" $file:r.f90 \\ >> source_list
+end
+

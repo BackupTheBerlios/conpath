@@ -1,0 +1,11 @@
+# Teodoro Laino - December 2002
+# Daniele Passerone - December 2002
+Per introdurre altre routine Lapack o blas e' sufficiente 
+collegarsi al sito : www.netlib.org
+Selezionare le routine desiderate (facendo attenzione a richiedere
+tutte le dipendenze!) 
+make config dalla Library directory
+e quindi make
+(tutto dovrebbe funzionare... a patto che si scelgano le routine
+in doppia precisione .. altrimenti bisogna modificare un po` il 
+Makefile )

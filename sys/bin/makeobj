@@ -1,0 +1,57 @@
+#!/usr/bin/perl
+######################################################################
+# Usage: makeobj
+#
+# Written by Michael Wester <wester@math.unm.edu> February 16, 1995
+# Cotopaxi (Consulting), Albuquerque, New Mexico
+# sent to me by Joel Schulman <schulman@madmax.hrl.hac.com>
+######################################################################
+#
+open(MAKEFILE, "> objlist ");
+#
+# Source listing
+#
+print MAKEFILE "SRCS =\t";
+@srcs = <*.f90 *.f *.F *.c>;
+&PrintWords(8, 0, @srcs);
+print MAKEFILE "\n\n";
+#
+# Object listing
+#
+print MAKEFILE "OBJS =\t";
+@objs = @srcs;
+foreach (@objs) { s/\.[^.]+$/.o/ };
+&PrintWords(8, 0, @objs);
+print MAKEFILE "\n\n";
+#
+# Define common macros
+#
+sub PrintWords {
+   local($columns) = 78 - shift(@_);
+   local($extratab) = shift(@_);
+   local($wordlength);
+   #
+   print MAKEFILE @_[0];
+   $columns -= length(shift(@_));
+   foreach $word (@_) {
+      $wordlength = length($word);
+      if ($wordlength + 1 < $columns) {
+         print MAKEFILE " $word";
+         $columns -= $wordlength + 1;
+         }
+      else {
+         #
+         # Continue onto a new line
+         #
+         if ($extratab) {
+            print MAKEFILE " \\\n\t\t$word";
+            $columns = 62 - $wordlength;
+            }
+         else {
+            print MAKEFILE " \\\n\t$word";
+            $columns = 70 - $wordlength;
+            }
+         }
+      }
+   }
+#

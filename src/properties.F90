@@ -1,0 +1,205 @@
+MODULE MODPROPERTIES
+  USE SYSTEM_UTIL, ONLY: CPSTOP
+  USE START_JOB,   ONLY: PROPERTIES,   &
+                         PROPERTY,     &
+                         BOND,         &
+                         IBOND,        &
+                         ANGLE,        &
+                         IANGLE,       &
+                         TORSION,      &
+                         ITORSION
+  USE GEO_OBJECTS, ONLY: BOND_VAL,     &
+                         ANGLE_VAL,    &
+                         TORS_VAL
+  USE CONVFACTORS, ONLY: BOHRTOANG,    &
+                         RADTODEGREE
+  IMPLICIT NONE
+  DOUBLE PRECISION :: VBOND, VANGLE, VTORSION
+  DOUBLE PRECISION, DIMENSION(3) :: LMOM
+
+  INTERFACE OPERATOR (.CROSS.)
+     MODULE PROCEDURE CROSS
+  END INTERFACE
+
+CONTAINS
+
+  FUNCTION CROSS(V1, V2)
+    IMPLICIT NONE
+    DOUBLE PRECISION, DIMENSION(3), INTENT(IN)  :: V1, V2
+    DOUBLE PRECISION, DIMENSION(3) :: CROSS
+
+    CROSS(1)=V1(2)*V2(3)-V1(3)*V2(2)
+    CROSS(2)=V1(3)*V2(1)-V1(1)*V2(3)
+    CROSS(3)=V1(1)*V2(2)-V1(2)*V2(1)
+    RETURN
+  END FUNCTION CROSS
+
+  SUBROUTINE COMPUTE_PROPERTIES(COORD,VEL,N,IPRINT,NSTEP)
+    USE XYZ, ONLY : POINT
+    IMPLICIT NONE
+    DOUBLE PRECISION, ALLOCATABLE :: C(:,:), V(:,:)
+    TYPE(POINT), INTENT(IN) :: COORD(*), VEL(*)
+    INTEGER (KIND=8), INTENT(IN) :: N
+    INTEGER, INTENT(IN) :: IPRINT, NSTEP
+    INTEGER :: I, J, NBOND, NANGLE, NTORSION, NCOORD
+    LOGICAL PRINT
+
+    ALLOCATE ( C(3,N),  V(3,N) )
+    PRINT = MOD(NSTEP,IPRINT).EQ.0
+    NBOND=0
+    NANGLE=0
+    NTORSION=0
+    NCOORD = 3 * N
+
+    DO I=1,N
+       C(1,I)=COORD(I)%X
+       C(2,I)=COORD(I)%Y
+       C(3,I)=COORD(I)%Z
+
+       V(1,I)=VEL(I)%X
+       V(2,I)=VEL(I)%Y
+       V(3,I)=VEL(I)%Z
+    END DO
+       
+    CALL WRITE_PROP('START',0,(/3*0.D0/),PRINT,NSTEP)
+
+    DO J=1,PROPERTIES
+       SELECT CASE (PROPERTY(J))
+       CASE('ANGULARMOM')
+          CALL ANGULARMOM(C, V, N)
+          CALL WRITE_PROP('ANGULAR MOMENTUM',1,LMOM,PRINT,NSTEP)
+       CASE('MOMENTUM  ')
+          CALL COMPMOMENTUM(C, V, N, 0)
+          CALL WRITE_PROP('MOMENTUM',1,LMOM,PRINT,NSTEP)
+       CASE('BOND      ')
+          NBOND=NBOND+1
+          VBOND=BOND_VAL(BOND(NBOND,1),BOND(NBOND,2),   &
+               RESHAPE(C,SHAPE=(/NCOORD/)))*BOHRTOANG
+          CALL WRITE_PROP('BOND',NBOND,(/VBOND,0.D0,0.D0/),PRINT,NSTEP)
+       CASE('ANGLE     ')
+          NANGLE=NANGLE+1
+          VANGLE=ANGLE_VAL(ANGLE(NANGLE,1),ANGLE(NANGLE,2),ANGLE(NANGLE,3), &
+               RESHAPE(C,SHAPE=(/NCOORD/)))*RADTODEGREE
+          CALL WRITE_PROP('ANGLE',NANGLE,(/VANGLE,0.D0,0.D0/),PRINT,NSTEP)
+       CASE('TORSION   ')
+          NTORSION=NTORSION+1
+          VTORSION=TORS_VAL(TORSION(NTORSION,1),TORSION(NTORSION,2), &
+               TORSION(NTORSION,3),TORSION(NTORSION,4),              &
+               RESHAPE(C,SHAPE=(/NCOORD/)))*RADTODEGREE
+          CALL WRITE_PROP('TORSION',NTORSION,(/VTORSION,0.D0,0.D0/),PRINT,NSTEP)
+       CASE DEFAULT
+          WRITE(6,'(3A)')'SORRY. I MISS HOW TO COMPUTE PROPERTY:', &
+                        PROPERTY(J),' !'
+          CALL CPSTOP('COMPUTE_PROPERTIES')
+       END SELECT
+    END DO
+
+    CALL WRITE_PROP('END',99,(/3*0.D0/),PRINT,NSTEP)
+
+    DEALLOCATE ( C, V )
+    RETURN
+  END SUBROUTINE COMPUTE_PROPERTIES
+
+
+    
+  SUBROUTINE ANGULARMOM(C, V, N)
+    USE DYNPREPARE, ONLY: MASS => M
+    IMPLICIT NONE
+    DOUBLE PRECISION, INTENT(IN) :: C(3,N), V(3,N)
+    INTEGER (KIND=8), INTENT(IN) :: N
+    DOUBLE PRECISION, DIMENSION(3) :: LMOM_TMP
+    INTEGER :: J
+
+    LMOM=0.D0
+    DO J=1,N
+       LMOM_TMP = MASS(J) * RESHAPE(C(1:3,J:J),SHAPE=(/3/)) &
+                            .CROSS.                         &
+                            RESHAPE(V(1:3,J:J),SHAPE=(/3/)) 
+       LMOM = LMOM + LMOM_TMP
+    END DO
+
+    RETURN
+  END SUBROUTINE ANGULARMOM
+
+
+  SUBROUTINE COMPMOMENTUM(C, V, N, IFL)
+    USE DYNPREPARE,  ONLY:  MASS => M
+    USE CONVFACTORS, ONLY:  AMUTOAU
+    IMPLICIT NONE
+    DOUBLE PRECISION, INTENT(IN) :: C(3,N), V(3,N)
+    DOUBLE PRECISION :: AUTOAMU
+    INTEGER (KIND=8), INTENT(IN) :: N
+    INTEGER :: J,IFL
+
+    AUTOAMU=1.D0/AMUTOAU
+    LMOM=0.D0
+    DO J=1,N
+       IF (IFL.EQ.0)THEN
+          LMOM = LMOM +  MASS(J)  * RESHAPE(V(1:3,J:J),SHAPE=(/3/)) 
+       ELSE
+          LMOM = LMOM +  MASS(J)  * RESHAPE(C(1:3,J:J),SHAPE=(/3/)) 
+       ENDIF
+    END DO
+
+    RETURN
+  END SUBROUTINE COMPMOMENTUM
+
+  
+  SUBROUTINE WRITE_PROP(PROP,NUM,VAL,PRINT,NSTEP)
+    USE UNITS_FILE, ONLY: PRPFILE
+    USE START_JOB,  ONLY: DT => TSTEP
+    IMPLICIT NONE
+    CHARACTER (LEN=*), INTENT(IN) :: PROP
+    INTEGER, INTENT(IN) :: NUM, NSTEP
+    DOUBLE PRECISION, DIMENSION(3), INTENT(IN) :: VAL
+    LOGICAL, INTENT(IN) :: PRINT
+
+    IF (.NOT.PRINT) RETURN
+
+    SELECT CASE (PROP)
+    CASE ('ANGULAR MOMENTUM')
+       WRITE(PRPFILE,103)VAL(1),VAL(2),VAL(3)
+       WRITE(PRPFILE,101)   
+    CASE ('MOMENTUM')
+       WRITE(PRPFILE,107)VAL(1),VAL(2),VAL(3)
+       WRITE(PRPFILE,101)   
+    CASE ('BOND')
+       WRITE(PRPFILE,104)BOND(NUM,1),BOND(NUM,2),VAL(1)
+    CASE ('ANGLE')
+       WRITE(PRPFILE,105)ANGLE(NUM,1),ANGLE(NUM,2),ANGLE(NUM,3),VAL(1)
+    CASE ('TORSION')
+       WRITE(PRPFILE,106)TORSION(NUM,1),TORSION(NUM,2),TORSION(NUM,3),&
+            TORSION(NUM,4),VAL(1)
+    CASE ('START')
+       WRITE(PRPFILE,100)
+       WRITE(PRPFILE,101)
+       WRITE(PRPFILE,102)NSTEP,REAL(NSTEP)*DT
+       WRITE(PRPFILE,101)
+       WRITE(PRPFILE,100)
+       WRITE(PRPFILE,101)       
+    CASE ('END')
+       WRITE(PRPFILE,101)       
+       WRITE(PRPFILE,100)      
+       RETURN
+    CASE DEFAULT
+       CALL CPSTOP('WRITE_PROP')
+    END SELECT
+
+    RETURN
+ 100  FORMAT(80('*'))
+ 101  FORMAT('*',78X,'*')
+ 102  FORMAT('*',' STEP NUMBER=',I6,38X,'TIME=',F12.3,' fs',' *')
+ 103  FORMAT('*',' ANGULAR MOMENTUM',10X,'Lx=',F11.7,3X,  &
+                                         'Ly=',F11.7,3X,  &
+                                         'Lz=',F11.7,3X,'*')
+ 107  FORMAT('*',' MOMENTUM',18X,        'Px=',F11.7,3X,  &
+                                         'Py=',F11.7,3X,  &
+                                         'Pz=',F11.7,3X,'*')
+ 104  FORMAT('*',' BOND    <',I4,',',I4,' >'              ,25X,'   Bond(Angstrom)=',F11.6,3X,'*')
+ 105  FORMAT('*',' ANGLE   <',I4,',',I4,',',I4,' >'       ,20X,'    Angle(Degree)=',F11.6,3X,'*')
+ 106  FORMAT('*',' TORSION <',I4,',',I4,',',I4,',',I4,' >',15X,'  Torsion(Degree)=',F11.6,3X,'*')
+
+  END SUBROUTINE WRITE_PROP
+
+
+END MODULE MODPROPERTIES
