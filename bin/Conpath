@@ -46,6 +46,9 @@ end
 if ( ${restartWFU} == "NO" ) then
   find $TMPDIR   -name "*.res" -exec rm -f {} \;
   find ${wfudir} -name "*.res" -exec rm -f {} \;
+else
+  cp molpro.res ${wfudir}
+  mv molpro.res molpro.res.used
 endif 
 
 # Start the job..
