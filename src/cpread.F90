@@ -124,6 +124,8 @@ MODULE START_JOB                                                        !
       INTEGER             :: NREP1, NREP2                               !
       LOGICAL             :: ADDREPULSIVE                               !
       DOUBLE PRECISION    :: AREP, SIGREP                               !
+      INTEGER             :: NINTCONSTR
+      INTEGER, ALLOCATABLE :: LOPT(:), LOPT_TMP(:)                          
 !     -------------------------------------------------------------------
       CONTAINS
 !     ===================================================================
@@ -180,6 +182,7 @@ MODULE START_JOB                                                        !
       V1V2UPDATE=.FALSE.                                                !
       ADDREPULSIVE=.FALSE.                                              !
       TYPEZMAT="MOLPRO"                                                 !
+      NINTCONSTR=0
 !     ------------------------------------------------------------------!
 !     Get Input file                                                    !
 !     ------------------------------------------------------------------!
@@ -363,7 +366,6 @@ MODULE START_JOB                                                        !
                           PROPERTY(IPROP)                               !
                      CALL CPSTOP('READ_DATA')                           !
                   END SELECT                                            !
-                                                                        !
                CASE ('NOROTATION')                                      !
                   IND1=INDEX(LINE,'=')+1                                !
                   IND2=INDEX(LINE,',')-1                                !
@@ -371,23 +373,23 @@ MODULE START_JOB                                                        !
                CASE ('LCONSTR   ')                                      !
                   IND1=INDEX(LINE,'=')+1                                !
                   IND2=INDEX(LINE,',')-1                                !
-                  READ(LINE(IND1:IND2),*)NOELLE
+                  READ(LINE(IND1:IND2),*)NOELLE                         !
                CASE ('PCONSTR   ')                                      !
                   IND1=INDEX(LINE,'=')+1                                !
                   IND2=INDEX(LINE,',')-1                                !
-                  READ(LINE(IND1:IND2),*)NOPI
+                  READ(LINE(IND1:IND2),*)NOPI                           !
                CASE ('GHCONSTR  ')                                      !
                   IND1=INDEX(LINE,'=')+1                                !
                   IND2=INDEX(LINE,',')-1                                !
-                  READ(LINE(IND1:IND2),*)NOGH
+                  READ(LINE(IND1:IND2),*)NOGH                           !
                CASE ('KUTTEH    ')                                      !
                   IND1=INDEX(LINE,'=')+1                                !
                   IND2=INDEX(LINE,',')-1                                !
                   READ(LINE(IND1:IND2),*)KUTTEH                         !
-               CASE ('V1V2UPDATE    ')                                      !
+               CASE ('V1V2UPDATE    ')                                  !
                   IND1=INDEX(LINE,'=')+1                                !
                   IND2=INDEX(LINE,',')-1                                !
-                  READ(LINE(IND1:IND2),*)V1V2UPDATE
+                  READ(LINE(IND1:IND2),*)V1V2UPDATE                     !
                CASE ('VELREST   ')                                      !
                   IND1=INDEX(LINE,'=')+1                                !
                   IND2=INDEX(LINE,',')-1                                !
@@ -411,11 +413,11 @@ MODULE START_JOB                                                        !
                CASE ('AREP      ')                                      !
                   IND1=INDEX(LINE,'=')+1                                !
                   IND2=INDEX(LINE,',')-1                                !
-                  READ(LINE(IND1:IND2),*)AREP
-               CASE ('SIGREP    ')                                    !
+                  READ(LINE(IND1:IND2),*)AREP                           !
+               CASE ('SIGREP    ')                                      !
                   IND1=INDEX(LINE,'=')+1                                !
                   IND2=INDEX(LINE,',')-1                                !
-                  READ(LINE(IND1:IND2),*)SIGREP
+                  READ(LINE(IND1:IND2),*)SIGREP                         !
                CASE ('ALPHA     ')                                      !
                   IND1=INDEX(LINE,'=')+1                                !
                   IND2=INDEX(LINE,',')-1                                !
@@ -428,7 +430,7 @@ MODULE START_JOB                                                        !
                   IND1=INDEX(LINE,'=')+1                                !
                   IND2=INDEX(LINE,',')-1                                !
                   READ(LINE(IND1:IND2),*)INI_TEMP                       !
-               CASE ('SCALETEMP   ')                                      !
+               CASE ('SCALETEMP   ')                                    !
                   IND1=INDEX(LINE,'=')+1                                !
                   IND2=INDEX(LINE,',')-1                                !
                   READ(LINE(IND1:IND2),*)TEMP_SCALE
@@ -524,6 +526,21 @@ MODULE START_JOB                                                        !
                   IND1=INDEX(LINE,'=')+1                                !
                   IND2=INDEX(LINE,',')-1                                !
                   READ(LINE(IND1:IND2),'(A)')ABINIT_OUT                 !
+               CASE ('CONSTRAINT')
+                  NINTCONSTR = NINTCONSTR +1
+                  IF (NINTCONSTR.EQ.1) THEN     
+                     ALLOCATE ( LOPT(1) )
+                  ELSE                
+                     ALLOCATE ( LOPT_TMP(NINTCONSTR-1) )
+                     LOPT_TMP = LOPT
+                     DEALLOCATE ( LOPT )
+                     ALLOCATE   ( LOPT (NINTCONSTR) )
+                     LOPT(1:NINTCONSTR-1) = LOPT_TMP
+                     DEALLOCATE (LOPT_TMP) 
+                  END IF
+                  IND1=INDEX(LINE,'=')+1            
+                  IND2=INDEX(LINE,',')-1
+                  READ(LINE(IND1:IND2),*)LOPT(NINTCONSTR)
                CASE DEFAULT                                             !
                   WRITE(6,'(A)')'ERROR IN ConPath INPUT FILE.'          !
                   WRITE(6,'(A)') &                                      !

@@ -112,10 +112,17 @@
             CALL CPSTOP('CONPATH')                                      !
          END SELECT                                                     !
                                                                         !
-      CASE ('ZMATOPTIMI')                                               !
-         CALL INTERNAL_OPTIMIZE_PROC                                    !
+      CASE ('OPTIMIZE  ')                                               !
+         SELECT CASE (COORDINATES)                                      !
+         CASE ('CARTESIAN')                                             !
+            WRITE(6,'(A)')'NOT IMPLEMENTED YET!'                        !
+            CALL CPSTOP('CONPATH')                                      !
+         CASE ('ZMATCOORD')                                             !
+            CALL INTERNAL_OPTIMIZE_PROC                                 !
+         END SELECT                                                     !
       CASE ('ANALTRAJ  ')                                               !
-                                                                        !
+         WRITE(6,'(A)')'NOT IMPLEMENTED YET!'                           !
+         CALL CPSTOP('CONPATH')                                         !         
       CASE DEFAULT                                                      !
                                                                         !
          WRITE(6,'(A)')'METHOD: '//METHOD//' UNKNOWN!'                  !

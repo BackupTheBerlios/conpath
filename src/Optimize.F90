@@ -25,6 +25,7 @@ MODULE OPTIMIZATION_PROCEDURES
                           M,                   &
                           LAB
   USE DYNA_ZMAT,    ONLY: GET_XYZ_GEO
+  USE SYSTEM_UTIL,  ONLY: CPSTOP
   IMPLICIT NONE
 CONTAINS
   SUBROUTINE INTERNAL_OPTIMIZE_PROC
@@ -42,6 +43,7 @@ CONTAINS
     INTEGER                        :: RSTEP, STEP
     DOUBLE PRECISION               :: DT, PI
     DOUBLE PRECISION               :: K, E, UPOT, VEXC, VFOND
+    DOUBLE PRECISION, ALLOCATABLE  :: LOW(:), UPP(:), NBD(:)
     !
     IF ( IPRINT .LE. 0 ) IPRINT = NSTEP + 1
     NUM_VAR = NUM_BONDS + NUM_ANGLES + NUM_TORSIONS
@@ -83,23 +85,9 @@ CONTAINS
     WRITE(6,'('' NUMBER OF STEPS  = '',I10  )') NSTEP
     WRITE(6,'('' OUTPUT FREQUENCY = '',I10  )') IPRINT
     !
-    ! 
-    !
     CALL FLUSH_FILES
+    CALL driver_Lbfgs ( NUM_VAR, M, QINTN, LOW, UPP, NBD)
     !
-    ! Compute Forces...
-    !
-    ! Sono arrivato qui...
-    ! Bisogna:
-    ! 1) Calcolare le forze in coordinate cartesiane
-    ! 2) Proiettarle nelle coordinate interne
-    ! 3) Annullare i gradienti delle coord interne che vuoi congelare
-    ! 4) ritrasformale nelle coordinate cartesiane
-    ! 5) Chiamare in questa routine il driver per Lbfgs
-    ! 6) I punti 1)->4) devono essere fatti da una routine interna a questo modulo...
-    !
-    CALL GET_XYZ_GEO
-    CALL FORCE_CART ( VEXC , VFOND,  UPOT, STEP )
     !
     RETURN
 001 FORMAT("*************************************************************************", &
@@ -120,5 +108,86 @@ CONTAINS
 003 FORMAT("* INTERNAL COORDINATE N.:",I3,"      VALUE:",F12.6," Degree   * ANGLE   *"  )
 004 FORMAT("* INTERNAL COORDINATE N.:",I3,"      VALUE:",F12.6," Degree   * TORSION *"  )
 005 FORMAT("*************************************************************************"  )
+      ! 
   END SUBROUTINE INTERNAL_OPTIMIZE_PROC
+
+  SUBROUTINE COMP_ENE_FORCES_OPTIMIZE ( XVAL, FUNC, F_INT_OUT, NLENGTH, STEP)
+    USE  BUILD_BMAT,   ONLY:  CREATE_BMAT,   &
+                              BMAT
+    USE FORCE,       ONLY: FORCE_CART
+    USE CONVFACTORS, ONLY: ANGTOBOHR
+    IMPLICIT NONE
+    ! Arguments
+    INTEGER, INTENT(IN)   :: NLENGTH, STEP
+    DOUBLE PRECISION, INTENT(INOUT)                     :: FUNC
+    DOUBLE PRECISION, DIMENSION(NLENGTH), INTENT(INOUT) :: F_INT_OUT, XVAL
+    ! Local Variables
+    DOUBLE PRECISION, ALLOCATABLE  :: FINT(:)
+    DOUBLE PRECISION :: VFOND, UPOT, PI
+    INTEGER :: I, L
+
+    PI = 4.D0 * ATAN(1.D0)
+    ALLOCATE ( FINT(NLENGTH) )
+    ! Update GEO Vector
+    I = 0
+    DO L = 2, NUMAT
+       I = I + 1
+       GEO(1,L) = XVAL(I)
+       IF (L.EQ.2) CYCLE
+       I = I + 1
+       GEO(2,L) = XVAL(I)
+       IF (L.EQ.3) CYCLE
+       I = I + 1
+       GEO(3,L) = XVAL(I)
+    END DO
+    ! Compute Forces...
+    ! Get geometry into XYZ format
+    ! Compute forces in Cartesian Coordinates
+    CALL GET_XYZ_GEO
+    CALL FORCE_CART ( FUNC , VFOND,  UPOT, STEP )
+    ! Project out forces into internal coordinates
+    CALL CREATE_BMAT(CX, GEO, NA, NB, NC)
+    CALL PROJECT_FORCES( BMAT, FX, FINT, NLENGTH )
+    ! Nullify gradients according constraints
+    CALL IMPOSE_CONSTRAINT( FINT, NLENGTH )
+    F_INT_OUT = FINT
+    !        
+    RETURN
+  END SUBROUTINE COMP_ENE_FORCES_OPTIMIZE
+
+
+
+  SUBROUTINE PROJECT_FORCES( BMAT, FX, FINT, NUM_VAR)
+    IMPLICIT NONE
+    ! Arguments
+    INTEGER, INTENT(IN) :: NUM_VAR
+    DOUBLE PRECISION, DIMENSION(NUM_VAR,3*NUMAT) :: BMAT
+    DOUBLE PRECISION, DIMENSION(NUM_VAR) :: FINT
+    DOUBLE PRECISION, DIMENSION(3*NUMAT) :: FX
+    ! Local Variables
+    
+    FINT = MATMUL( BMAT, FX )
+
+    RETURN
+  END SUBROUTINE PROJECT_FORCES
+
+
+  SUBROUTINE IMPOSE_CONSTRAINT( FINT, NUM_VAR )
+    USE START_JOB, ONLY:   LOPT,         &
+                           NINTCONSTR    
+    IMPLICIT NONE
+    ! Arguments
+    INTEGER, INTENT(IN) :: NUM_VAR
+    DOUBLE PRECISION, DIMENSION(NUM_VAR) :: FINT
+    ! Local Variables
+    INTEGER :: I
+
+    !
+    DO I=1, NINTCONSTR
+       FINT(LOPT(I)) = 0.D0
+    END DO
+
+    RETURN
+  END SUBROUTINE IMPOSE_CONSTRAINT
+
 END MODULE OPTIMIZATION_PROCEDURES

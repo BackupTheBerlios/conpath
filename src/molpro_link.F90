@@ -176,8 +176,6 @@ MODULE MOLPRO_LINK
       REWIND(ICHANNEL)
       RETURN
 !     -------------------------------------------------------------------
- 100  FORMAT ('CANNOT FIND LABELS :',3(/A/),' ON CHANNEL FILE:',I5)
-!     -------------------------------------------------------------------
       END SUBROUTINE GET_CHARGES
 !     ===================================================================
 END MODULE MOLPRO_LINK

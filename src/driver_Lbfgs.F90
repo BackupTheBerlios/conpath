@@ -47,10 +47,12 @@
 
 
 subroutine driver_Lbfgs(N, M, x, l, u, nbd)
+  use OPTIMIZATION_PROCEDURES, only: COMP_ENE_FORCES_OPTIMIZE
   implicit none
   integer, intent(in)  :: N, M
   integer, intent(in), dimension(N) :: nbd
   double precision, dimension(N)    :: x, l, u
+  external :: MainRoutine
 !
 ! Internal Variables:
 !        nmax is the dimension of the largest problem to be solved.
@@ -62,7 +64,7 @@ subroutine driver_Lbfgs(N, M, x, l, u, nbd)
  
       character (len=60) :: task, csave
       logical            :: lsave(4), Conv
-      integer            :: iprint
+      integer            :: iprint, step
       integer         , allocatable   :: iwa(:)
       integer,  dimension(44) :: isave
       double precision   :: f, factr, pgtol
@@ -78,6 +80,7 @@ subroutine driver_Lbfgs(N, M, x, l, u, nbd)
 !     We wish to have output at every iteration.
 !
       iprint = 1
+      step   = 0
 !
 !     Allocate vectors
 !
@@ -107,6 +110,7 @@ MainLoop:      do while (.not.Conv)
 !      
 !     This is the call to the L-BFGS-B code.
 ! 
+      step = step + 1
       call setulb(n,m,x,l,u,nbd,f,g,factr,pgtol,wa,iwa,task,iprint,csave,lsave,isave,dsave)
  
       if (task(1:2) .eq. 'FG') then
@@ -116,7 +120,7 @@ MainLoop:      do while (.not.Conv)
 !
 !        Compute function value f for the sample problem.
 !
-         ! CALL COMP_ENE_AND_DERIVATE 
+         CALL COMP_ENE_FORCES_OPTIMIZE( x, f, g, n, step )
 
 !
 !          go back to the minimization routine.
