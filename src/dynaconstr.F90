@@ -135,7 +135,7 @@ MODULE DYNACONSTRAINT
       WRITE(6,'(20X,'' MOLECULAR DYNAMICS     CARTESIAN MODULE   '')')
       WRITE(6,'(20X,'' LEAPFROG ALGORITHM WITH MINIMAL STORAGE   '')')
       
-            
+             
       WRITE(6,'(//1X,A)') TITLE
       WRITE(6,'('' NUMBER OF ATOMS  = '',I10  )') N
       WRITE(6,'('' NUMBER OF STEPS  = '',I10  )') NSTEP

@@ -73,7 +73,8 @@ MODULE FORCE                                                            !
                              ADDREPULSIVE                               !
       USE MOLPRO_LINK, ONLY: GET_VECTOR_MOLPRO,   &                     !
                              GET_ENERGIES_MOLPRO,   &                   !
-                             GET_ENERGY_MOLPRO                          !
+                             GET_ENERGY_MOLPRO,   &                     !
+                             GET_CHARGES                                !
       USE GEOMODULE,   ONLY: CREATE_GEOFILE                             !
 !     ------------------------------------------------------------------!
 !     ROUTINE TO COMPUTE FORCES WITH AN EXTERNAL ABINITIO PROGRAM.      !
@@ -195,6 +196,7 @@ MODULE FORCE                                                            !
             END IF                                                      !
          CASE ('CONSTRAIN ')                                            !
             CALL STORE_OLD_VALUE(FSAVE,A,OLDF,OLDA,NUMAT)               !
+            CALL GET_CHARGES ( ICHANNEL, NUMAT )                        !
             CALL GET_ENERGIES_MOLPRO  ( ICHANNEL, VEXC, VFOND )         !
             LABEL='SA-MC DIFF. GRADIENT'                                !
             CALL GET_VECTOR_MOLPRO ( ICHANNEL, F,  NUMAT,  LABEL )      !

@@ -1,5 +1,7 @@
 MODULE MOLPRO_LINK
       IMPLICIT NONE
+      LOGICAL :: COMP_CHARGE
+      DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:) :: CHARGE
 !     -------------------------------------------------------------------
       CONTAINS
 !     ===================================================================
@@ -130,5 +132,52 @@ MODULE MOLPRO_LINK
  100  FORMAT ('CANNOT FIND LABELS :',3(/A/),' ON CHANNEL FILE:',I5)
 !     -------------------------------------------------------------------
        END SUBROUTINE GET_ENERGY_MOLPRO
+!     ===================================================================
+      SUBROUTINE GET_CHARGES ( ICHANNEL, NUMAT )
+!     ===================================================================
+      USE  SYSTEM_UTIL, ONLY:  SEARCHT,           &
+                               CPSTOP,            &
+                               SEARCH
+      USE  XYZ,         ONLY:  POINT
+      USE  PARSING,     ONLY:  CLEANSTRING 
+!     -------------------------------------------------------------------
+      IMPLICIT NONE
+      CHARACTER  (LEN=3)                     :: SIGN
+      CHARACTER  (LEN=10)                    :: LABEL1,LABEL2,LABEL3
+      CHARACTER  (LEN=256)                   :: LINE
+      LOGICAL                                :: CONFERMA
+      INTEGER                                :: IND1, I
+      INTEGER,  INTENT(IN)                   :: ICHANNEL
+      INTEGER (KIND=8), INTENT(IN)           :: NUMAT
+
+      LABEL1='Unique'
+      LABEL2='Total'
+      LABEL3='Charge'
+      COMP_CHARGE = .FALSE.
+      CALL CLEANSTRING(LINE,LEN(LINE))
+      CONFERMA=.FALSE.
+      CALL SEARCHT(LABEL1,LABEL2,LABEL3,ICHANNEL,.TRUE.,'AHEA', & 
+                   CONFERMA,LINE)
+      IF (.NOT.CONFERMA) THEN
+         WRITE(6,'(A)')'NO CHARGE AVAILABLE'
+         RETURN
+      END IF 
+      COMP_CHARGE = .TRUE.
+      IF (.NOT.ALLOCATED(CHARGE)) ALLOCATE(CHARGE(NUMAT))
+      CHARGE = 0.D0
+      IND1=INDEX(LINE,'Total')+5
+      DO I = 1, NUMAT
+         READ(ICHANNEL,'(A)')LINE
+         READ(LINE(IND1:IND1+3),'(A3)')SIGN
+         READ(LINE(IND1+3:),*)CHARGE(I)
+         IF (INDEX(SIGN,'-').NE.0) CHARGE(I) = CHARGE(I) * (-1.D0)
+      END DO
+
+      REWIND(ICHANNEL)
+      RETURN
+!     -------------------------------------------------------------------
+ 100  FORMAT ('CANNOT FIND LABELS :',3(/A/),' ON CHANNEL FILE:',I5)
+!     -------------------------------------------------------------------
+      END SUBROUTINE GET_CHARGES
 !     ===================================================================
 END MODULE MOLPRO_LINK

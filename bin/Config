@@ -1,7 +1,7 @@
 #!/bin/tcsh
 # T.Laino 16.11.02 - Configuring makefile for ConPath ...
 
-setenv CONPATH_SYSDIR /home/tlaino/ConPath/sys
+setenv CONPATH_SYSDIR /home/teo/ConPath/sys
 echo "Configuring Makefile..."
 
 echo "Listing source and objects files..."

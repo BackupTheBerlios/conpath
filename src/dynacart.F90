@@ -266,6 +266,7 @@ Main: DO  STEP = RSTEP+1, NSTEP
                              USEGRADEX
       USE UNITS_FILE,  ONLY: FLUSH_FILES
       USE CONICAL,     ONLY: STORE_IC, V1, V2, CSAVE
+      USE MOLPRO_LINK, ONLY: COMP_CHARGE, CHARGE
 !     -------------------------------------------------------------------
       IMPLICIT NONE
       TYPE(POINT), INTENT(IN)       :: C(*), V(*), F(*), A(*),    &
@@ -299,6 +300,21 @@ Main: DO  STEP = RSTEP+1, NSTEP
 !     -------------------------------------------------------------------
       WRITE(6,102)
       WRITE(6,100)('*',I=1,80)
+!     -------------------------------------------------------------------
+!     If charges are available, let's print them
+!     -------------------------------------------------------------------
+      IF (COMP_CHARGE) THEN
+         WRITE(6,102)
+         WRITE(6,112)
+         WRITE(6,102)
+         WRITE(6,100)('*',I=1,80)
+         WRITE(6,102)
+         DO I=1,N
+            WRITE(6,113)LAB(I),CHARGE(I)
+         END DO
+         WRITE(6,102)
+         WRITE(6,100)('*',I=1,80)         
+      END IF
       IF (USESQUARENE) THEN
          WRITE(6,109)UPOT,K
       ELSE
@@ -355,6 +371,9 @@ Main: DO  STEP = RSTEP+1, NSTEP
                     'FULL GRADIENT',10X,'*',/, &
              '*',11X,'PROJECTED OUT OF GH-PLANE',42X,'*')
  111  FORMAT('*',31X ,'GRADIENTS SECTION',30X,'*')
+      !
+ 112  FORMAT('*',6X,"CHARGE",66X,'*')
+ 113  FORMAT('*',1X,A2,F12.6,63X,'*')
 !     -------------------------------------------------------------------
       END SUBROUTINE  PRINTGEOVEL                     
 !     ===================================================================
