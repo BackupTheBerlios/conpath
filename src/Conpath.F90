@@ -61,6 +61,7 @@
       USE MARSAGLIAS,        ONLY: AMRSET                               !
       USE READ_ZMAT,         ONLY: READ_ZMAT_INPUT                      !
       USE READ_ZMAT,         ONLY: NATOMLOCZMAT => NUMAT                !
+      USE OPTIMIZATION_PROCEDURES, ONLY: INTERNAL_OPTIMIZE_PROC         !
       IMPLICIT NONE                                                     !
 !     ------------------------------------------------------------------!
 !     Reading Input file and getting all information useful for dynamics!
@@ -111,6 +112,8 @@
             CALL CPSTOP('CONPATH')                                      !
          END SELECT                                                     !
                                                                         !
+      CASE ('ZMATOPTIMI')                                               !
+         CALL INTERNAL_OPTIMIZE_PROC                                    !
       CASE ('ANALTRAJ  ')                                               !
                                                                         !
       CASE DEFAULT                                                      !

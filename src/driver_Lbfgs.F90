@@ -46,10 +46,11 @@
 !
 
 
-subroutine driver_Lbfgs(N, M, x, l, u)
+subroutine driver_Lbfgs(N, M, x, l, u, nbd)
   implicit none
   integer, intent(in)  :: N, M
-  double precision, dimension(N) :: x, l, u
+  integer, intent(in), dimension(N) :: nbd
+  double precision, dimension(N)    :: x, l, u
 !
 ! Internal Variables:
 !        nmax is the dimension of the largest problem to be solved.
@@ -62,7 +63,7 @@ subroutine driver_Lbfgs(N, M, x, l, u)
       character (len=60) :: task, csave
       logical            :: lsave(4), Conv
       integer            :: iprint
-      integer         , allocatable   :: nbd(:), iwa(:)
+      integer         , allocatable   :: iwa(:)
       integer,  dimension(44) :: isave
       double precision   :: f, factr, pgtol
       double precision, allocatable   :: g(:)
@@ -80,10 +81,9 @@ subroutine driver_Lbfgs(N, M, x, l, u)
 !
 !     Allocate vectors
 !
-      allocate (nbd(N),                      &
-                iwa(N),                      &
-                g(N),                        &
-                wa(2*M*N+4*N+12*M*M+12*M)      )
+      allocate ( iwa(N),                      &
+                 g(N),                        &
+                 wa(2*M*N+4*N+12*M*M+12*M)      )
 !
 !     We specify the tolerances in the stopping criteria.
 !
@@ -92,7 +92,8 @@ subroutine driver_Lbfgs(N, M, x, l, u)
 !
 ! 
       write (6,16)
-  16  format(/,5x, 'Solving sample problem.',/,5x, ' (f = 0.0 at the optimal solution.)',/)               
+  16  format(/,5x, 'Solving sample problem.',/,5x, ' (f = 0.0 at the optimal solution.)',/)
+               
 !
 !     We start the iteration by initializing task.
 !
